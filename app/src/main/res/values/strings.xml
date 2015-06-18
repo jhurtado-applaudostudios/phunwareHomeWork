@@ -1,11 +1,10 @@
 <resources>
-    <string name="app_name">phunwareHomeWork</string>
-
-    <string name="hello_world">Hello world!</string>
-    <string name="action_settings">Settings</string>
+    <string name="app_name">Homework</string>
+    <string name="venue_detail_schedule_format" formatted="false">%s to %s</string>
+    <string name="venue_detail_share_menu">Share</string>
     <string name="default_name">Sports Authority Field @ Mile High</string>
     <string name="default_address">1701 Bryant Street #700</string>
-    <string name="default_imae_url">http://lorempixel.com/900/500/sports/?v=-417059871</string>
+    <string name="default_image_url">http://lorempixel.com/900/500/sports/?v=-417059871</string>
     <string name="content_description">place_holder</string>
     <string name="pre_order">Pre Order Now</string>
     <string name="no_internet">There is no connection available tap the antenna to try again</string>

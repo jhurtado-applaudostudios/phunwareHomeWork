@@ -7,10 +7,13 @@ import retrofit.Callback;
 import retrofit.http.GET;
 
 /**
- * Created by Juan Hurtado on 6/8/2015.
+ * @author Juan Carlos Hurtado
  */
 public interface EndPoints {
-
+    /**
+     *
+     * @param response return a list of Venue type objects>
+     */
     @GET("/jon-hancock-phunware/nflapi-static.json")
     public void getVenues(Callback<List<Venue>> response);
 }

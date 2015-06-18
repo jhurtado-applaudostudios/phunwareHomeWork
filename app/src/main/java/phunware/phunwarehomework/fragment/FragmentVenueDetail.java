@@ -1,13 +1,16 @@
 package phunware.phunwarehomework.fragment;
 
-import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.support.v4.view.MenuItemCompat;
+import android.support.v7.widget.ShareActionProvider;
 import android.view.LayoutInflater;
+import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
@@ -19,40 +22,42 @@ import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.animation.GlideAnimation;
 import com.bumptech.glide.request.target.SimpleTarget;
 
-import java.text.ParseException;
 import java.util.List;
 
+import butterknife.ButterKnife;
+import butterknife.InjectView;
 import phunware.phunwarehomework.R;
-import phunware.phunwarehomework.ProjectApplication;
 import phunware.phunwarehomework.model.Schedule;
 import phunware.phunwarehomework.model.Venue;
-import phunware.phunwarehomework.util.DateParser;
-
 /**
- * Created by Juan Hurtado on 6/8/2015.
+ * @author Juan Hurtado on 6/8/2015.
  */
 public class FragmentVenueDetail extends Fragment {
+    /**
+     * Fragment venue detail TAG
+     */
     public static final String DETAIL = "detail";
+    /**
+     * Bundle parcelable argument name
+     */
     public static final String ARG_VENUE = "venue";
-    private OnBackButton mBackButton;
-    private DateParser mParser;
+    /**
+     * Current venue object on detail
+     */
     private Venue mCurrentVenue;
-    private Button mOrderTicketsButton;
-    private ImageView mVenuePhoto;
-    private TextView mAddress;
-    private TextView mAddress2;
-    private TextView mSchedules;
-
-
-    public interface OnBackButton{
-        public void onBackButton();
-    }
-
+    /**
+     * UI
+     */
+    @InjectView(R.id.btn_pre_order) Button orderTicketsButton;
+    @InjectView(R.id.img_venue_detail) ImageView venuePhoto;
+    @InjectView(R.id.txt_detail_name) TextView address;
+    @InjectView(R.id.txt_detail_name_2) TextView address2;
+    @InjectView(R.id.txt_detail_schedules) TextView scheduleList;
 
     public static FragmentVenueDetail getInstance(Venue venue){
         FragmentVenueDetail detail = new FragmentVenueDetail();
         Bundle bundle = new Bundle();
-        bundle.putSerializable(ARG_VENUE, venue);
+        bundle.putParcelable(ARG_VENUE, venue);
         detail.setArguments(bundle);
         return detail;
     }
@@ -61,7 +66,8 @@ public class FragmentVenueDetail extends Fragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         Bundle arguments = getArguments();
-        mCurrentVenue = (Venue) arguments.getSerializable(ARG_VENUE);
+        // receive current venue
+        mCurrentVenue = arguments.getParcelable(ARG_VENUE);
     }
 
     @Override
@@ -73,19 +79,14 @@ public class FragmentVenueDetail extends Fragment {
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        mOrderTicketsButton = injectView(R.id.btn_pre_order);
-        mVenuePhoto = injectView(R.id.img_venue_detail);
-        mAddress = injectView(R.id.txt_detail_name);
-        mAddress2 = injectView(R.id.txt_detail_name_2);
-        mSchedules = injectView(R.id.txt_detail_shedules);
-        mParser = ProjectApplication.getInstance().getParser();
-
-        setRetainInstance(true);
+        ButterKnife.inject(this, view);
+        setDataToUi();
         setHasOptionsMenu(true);
-
-        setData(mCurrentVenue);
-
-        mOrderTicketsButton.setOnClickListener(new View.OnClickListener() {
+        /**
+         * Click listener for the button that launches
+         * a web intent to a browser with the ticket link
+         */
+        orderTicketsButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 webIntent(mCurrentVenue.getmTicketLink());
@@ -93,56 +94,15 @@ public class FragmentVenueDetail extends Fragment {
         });
     }
 
-    public void setData(Venue venue){
-        Glide.with(getActivity().getApplicationContext())
-                .load(venue.getmImageUrl())
-                .asBitmap()
-                .into(new SimpleTarget<Bitmap>(100, 100) {
-                    @Override
-                    public void onResourceReady(Bitmap resource, GlideAnimation glideAnimation) {
-                        mVenuePhoto.setImageBitmap(resource);
-                    }
-                });
+    @Override
+    public void onPrepareOptionsMenu(Menu menu) {
+        super.onPrepareOptionsMenu(menu);
+        MenuItem shareItem = menu.findItem(R.id.venue_detail_share_menu);
+        ShareActionProvider shareActionProvider =
+                (ShareActionProvider) MenuItemCompat
+                        .getActionProvider(shareItem);
+        shareActionProvider.setShareIntent(getShareIntent());
 
-        mAddress.setText(venue.getmName());
-        mAddress2.setText(venue.getmAddress());
-        mSchedules.setText(getSchedules(venue.getmAvailableHours()));
-    }
-
-
-    public String getSchedules(List<Schedule> schedules){
-        StringBuilder builder = new StringBuilder();
-
-        for (Schedule schedule : schedules)
-            if (schedule != null)
-                try {
-                    builder.append(mParser.getParsedDate(schedule.getmStartDate(), schedule.getmEndDatel())).append(DateParser.LINE_SEPARATOR);
-                } catch (ParseException e) {
-                    e.printStackTrace();
-                }
-
-        return builder.toString();
-    }
-
-    private <T> T injectView(int viewId) {
-        return (T) getView().findViewById(viewId);
-    }
-
-    private void webIntent(String url) {
-        if (!url.startsWith("https://") && !url.startsWith("http://")){
-            url = "http://" + url;
-        }
-        Intent openUrlIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
-        startActivity(openUrlIntent);
-    }
-
-    public void shareIntent() {
-        Intent sharingIntent = new Intent(Intent.ACTION_SEND);
-        sharingIntent.setType("text/plain");
-        sharingIntent.putExtra(android.content.Intent.EXTRA_TEXT, mCurrentVenue.getmAddress() + DateParser.WHITE_SPACE + mCurrentVenue.getmCity()
-                + "\n\n" + mCurrentVenue.getmTicketLink() + "\n\n" + getSchedules(mCurrentVenue.getmAvailableHours()));
-        sharingIntent.putExtra(android.content.Intent.EXTRA_SUBJECT, mCurrentVenue.getmName());
-        startActivity(Intent.createChooser(sharingIntent, "Share using"));
     }
 
     @Override
@@ -151,26 +111,76 @@ public class FragmentVenueDetail extends Fragment {
 
         switch (id) {
             case android.R.id.home:
-                mBackButton.onBackButton();
-                break;
-            case R.id.share_item:
-                shareIntent();
+                getActivity().finish();
                 break;
         }
 
         return super.onOptionsItemSelected(item);
     }
+    /**
+     * Sets required data to components on the ui (e.g image view )
+     */
+    void setDataToUi(){
+        Glide.with(getActivity().getApplicationContext())
+                .load(mCurrentVenue.getmImageUrl())
+                .asBitmap()
+                .into(new SimpleTarget<Bitmap>() {
+                    @Override
+                    public void onResourceReady(Bitmap resource, GlideAnimation glideAnimation) {
+                        venuePhoto.setImageBitmap(resource);
+                    }
+                });
 
-    @Override
-    public void onAttach(Activity activity) {
-        super.onAttach(activity);
+        address.setText(mCurrentVenue.getmName());
+        address2.setText(mCurrentVenue.getmAddress());
+        scheduleList.setText(getSchedulesList(mCurrentVenue.getmAvailableHours(), getActivity().getApplicationContext()));
 
-        try {
-            mBackButton = (OnBackButton) activity;
-        } catch (ClassCastException e) {
-            throw new ClassCastException(activity.toString()
-                    + " must implement OnDetailClicked");
+    }
+    /**
+     * return a string with all the available schedules for
+     * the current venue
+     *
+     * @param list available schedules from the current venue
+     * @param context reference
+     * @return a string containing all schedules
+     */
+    private String getSchedulesList(List<Schedule> list, Context context){
+        StringBuffer scheduleText = new StringBuffer();
+        for (Schedule schedule : list){
+            scheduleText.append(schedule.getDisplayText(context) + " \n\n");
         }
+
+        return scheduleText.toString();
+    }
+    /**
+     * make an intent to open the ticket url on a browser
+     *
+     * @param url from the ticket link
+     * Handles url and performs a browser intent
+     */
+    private void webIntent(String url) {
+        if (!url.startsWith("https://") && !url.startsWith("http://")){
+            url = "http://" + url;
+        }
+        Intent openUrlIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+        startActivity(openUrlIntent);
+    }
+
+    /**
+     * Create and return a Share Intent.
+     *
+     * @return The Share Intent with the Venue Data
+     */
+    private Intent getShareIntent() {
+        Intent intent = new Intent(Intent.ACTION_SEND);
+        intent.setType("text/plain");
+        if (mCurrentVenue != null) {
+            intent.putExtra(android.content.Intent.EXTRA_SUBJECT,
+                    mCurrentVenue.getmName());
+            intent.putExtra(Intent.EXTRA_TEXT, mCurrentVenue.getShareText());
+        }
+
+        return intent;
     }
 
 }

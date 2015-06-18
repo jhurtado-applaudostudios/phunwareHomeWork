@@ -1,24 +1,22 @@
 package phunware.phunwarehomework.model;
 
+import android.os.Parcel;
+import android.os.Parcelable;
+
 import com.google.gson.annotations.SerializedName;
 
-import java.io.Serializable;
-import java.lang.annotation.Annotation;
-import java.util.List;
+import java.util.ArrayList;
 
 /**
- * Created by Juan Hurtado on 6/8/2015.
+ * @author Juan Hurtado on 6/8/2015.
  */
-public class Venue implements SerializedName, Serializable {
+public class Venue implements Parcelable {
 
     @SerializedName("ticket_link")
     private String mTicketLink;
 
-    @SerializedName("city")
-    private String mCity;
-
     @SerializedName("schedule")
-    private List<Schedule> mAvailableHours;
+    private ArrayList<Schedule> mAvailableHours = new ArrayList<>();
 
     @SerializedName("address")
     private String mAddress;
@@ -37,15 +35,15 @@ public class Venue implements SerializedName, Serializable {
         this.mName = name;
     }
 
-    public void setmTicketLink() {
-        this.mTicketLink = phunware.phunwarehomework.util.DateParser.WHITE_SPACE;
+    public void setmTicketLink(String ticketLink) {
+        this.mTicketLink = ticketLink;
     }
 
     public void setmAddress(String address) {
         this.mAddress = address;
     }
 
-    public void setmAvailableHours(List<Schedule> availableHours) {
+    public void setmAvailableHours(ArrayList<Schedule> availableHours) {
         this.mAvailableHours = availableHours;
     }
 
@@ -53,11 +51,7 @@ public class Venue implements SerializedName, Serializable {
         return mTicketLink;
     }
 
-    public String getmCity() {
-        return mCity;
-    }
-
-    public List<Schedule> getmAvailableHours() {
+    public ArrayList<Schedule> getmAvailableHours() {
         return mAvailableHours;
     }
 
@@ -72,17 +66,46 @@ public class Venue implements SerializedName, Serializable {
     public String getmName() {
         return mName;
     }
-
-
-    @Override
-    public String value() {
-        return null;
-    }
-
-    @Override
-    public Class<? extends Annotation> annotationType() {
-        return null;
+    /**
+     * @return the shared text to be shown
+     */
+    public final String getShareText() {
+        return mName + " " + mAddress;
     }
 
 
+    @Override
+    public int describeContents() {
+        return 0;
+    }
+
+    @Override
+    public void writeToParcel(Parcel dest, int flags) {
+        dest.writeString(this.mTicketLink);
+        dest.writeList(mAvailableHours);
+        dest.writeString(this.mAddress);
+        dest.writeString(this.mImageUrl);
+        dest.writeString(this.mName);
+    }
+
+    public Venue() {
+    }
+
+    private Venue(Parcel in) {
+        this.mTicketLink = in.readString();
+        in.readTypedList(mAvailableHours, Schedule.CREATOR);
+        this.mAddress = in.readString();
+        this.mImageUrl = in.readString();
+        this.mName = in.readString();
+    }
+
+    public static final Creator<Venue> CREATOR = new Creator<Venue>() {
+        public Venue createFromParcel(Parcel source) {
+            return new Venue(source);
+        }
+
+        public Venue[] newArray(int size) {
+            return new Venue[size];
+        }
+    };
 }

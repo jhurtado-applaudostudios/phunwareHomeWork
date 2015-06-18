@@ -20,10 +20,16 @@ import phunware.phunwarehomework.R;
 import phunware.phunwarehomework.model.Venue;
 
 /**
- * Created by Juan Hurtado on 6/8/2015.
+ * @author Juan Hurtado on 6/8/2015.
  */
-public class recyclerVenueAdapter extends RecyclerView.Adapter<recyclerVenueAdapter.ViewHolder> {
-    private final List<Venue> mDataSet;
+public class RecyclerVenueAdapter extends RecyclerView.Adapter<RecyclerVenueAdapter.ViewHolder> {
+    /**
+     * Current data list
+     */
+    private List<Venue> mDataSet;
+    /**
+     * On list item click listener
+     */
     private final onItemClickListener mClickCallback;
     private final Context mContext;
 
@@ -41,15 +47,15 @@ public class recyclerVenueAdapter extends RecyclerView.Adapter<recyclerVenueAdap
             mItem = (LinearLayout) convertView.findViewById(R.id.item_layout);
         }
 
-        public TextView getmAddress() {
+        public TextView getAddress() {
             return mAddress;
         }
 
-        public TextView getmAddress2() {
+        public TextView getAddress2() {
             return mAddress2;
         }
 
-        public ImageView getmVenuePhoto() {
+        public ImageView getVenuePhoto() {
             return mVenuePhoto;
         }
 
@@ -58,7 +64,7 @@ public class recyclerVenueAdapter extends RecyclerView.Adapter<recyclerVenueAdap
         }
     }
 
-    public recyclerVenueAdapter(Context context, List<Venue> dataSet, onItemClickListener listener) {
+    public RecyclerVenueAdapter(Context context, List<Venue> dataSet, onItemClickListener listener) {
         mContext = context;
         mClickCallback = listener;
         mDataSet = dataSet;
@@ -74,15 +80,18 @@ public class recyclerVenueAdapter extends RecyclerView.Adapter<recyclerVenueAdap
 
     @Override
     public void onBindViewHolder(final ViewHolder viewHolder, final int position) {
-        viewHolder.getmAddress().setText(mDataSet.get(position).getmName());
-        viewHolder.getmAddress2().setText(mDataSet.get(position).getmAddress());
+        /**
+         * Recycle the views
+         */
+        viewHolder.getAddress().setText(mDataSet.get(position).getmName());
+        viewHolder.getAddress2().setText(mDataSet.get(position).getmAddress());
         Glide.with(mContext)
                 .load(mDataSet.get(position).getmImageUrl())
                 .asBitmap()
                 .into(new SimpleTarget<Bitmap>(100, 100) {
                     @Override
                     public void onResourceReady(Bitmap resource, GlideAnimation glideAnimation) {
-                        viewHolder.getmVenuePhoto().setImageBitmap(resource);
+                        viewHolder.getVenuePhoto().setImageBitmap(resource);
                     }
                 });
 
@@ -102,6 +111,14 @@ public class recyclerVenueAdapter extends RecyclerView.Adapter<recyclerVenueAdap
 
     public interface onItemClickListener {
         public void onItemClick(int position);
+    }
+
+    public List<Venue> getDataSet(){
+        return mDataSet;
+    }
+
+    public void updateData(List<Venue> dataSet){
+        mDataSet = dataSet;
     }
 
 }

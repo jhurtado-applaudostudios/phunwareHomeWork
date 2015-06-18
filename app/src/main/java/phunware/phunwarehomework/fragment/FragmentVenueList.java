@@ -1,46 +1,51 @@
 package phunware.phunwarehomework.fragment;
 
 import android.app.Activity;
-import android.content.Context;
-import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 
+import java.util.ArrayList;
 import java.util.List;
 
-import phunware.phunwarehomework.ProjectApplication;
+import butterknife.ButterKnife;
+import butterknife.InjectView;
 import phunware.phunwarehomework.R;
-import phunware.phunwarehomework.adapter.recyclerVenueAdapter;
+import phunware.phunwarehomework.adapter.RecyclerVenueAdapter;
 import phunware.phunwarehomework.model.Venue;
-import retrofit.Callback;
+import phunware.phunwarehomework.network.DataListener;
+import phunware.phunwarehomework.network.DataLoader;
 import retrofit.RetrofitError;
-import retrofit.client.Response;
 
 /**
- * Created by Juan Hurtado on 6/8/2015.
+ * @author Juan Hurtado on 6/8/2015.
  */
-public class FragmentVenueList extends Fragment {
+public class FragmentVenueList extends Fragment implements DataListener {
+    /**
+     * Fragment Venue List TAG
+     */
     public static final String HOME = "home";
-    private RelativeLayout mBackground;
-    private Context mContext;
-    private List<Venue> mPersistentList;
-    private RecyclerView mVenuesList;
-    private OnItemClickListener mClickListener;
-    private ProgressBar mProgressBar;
+    /**
+     * Bundle parcelable argument name
+     */
+    private static final String ARG_VENUES = "venues";
 
-    public static FragmentVenueList getInstance(){
-        return new FragmentVenueList();
-    }
+    @InjectView(R.id.rl_list_background) RelativeLayout listBackground;
+    @InjectView(R.id.recycler_venues) RecyclerView venuesRecyclerView;
+    @InjectView(R.id.pg_loading) ProgressBar loadingBar;
+    /**
+     * Click listener Callback
+     */
+    private OnItemClickListener sClickListener;
+    private RecyclerVenueAdapter mRecyclerAdapter;
+
 
     public interface OnItemClickListener {
         public void onItemClick(Venue venue);
@@ -54,28 +59,41 @@ public class FragmentVenueList extends Fragment {
     @Override
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        mContext = getActivity().getApplicationContext();
+        /**
+         * Initialize ButterKnife
+         */
+        ButterKnife.inject(this, view);
         setRetainInstance(true);
-
-        mBackground = injectView(R.id.rl_list_background);
-        mProgressBar = injectView(R.id.pg_loading);
-        mVenuesList = injectView(R.id.recycler_venues);
-        mVenuesList.setLayoutManager(new LinearLayoutManager(mContext));
-
-        testConnection();
+        /**
+         * Set recyclers view layout manager
+         */
+        venuesRecyclerView.setLayoutManager(new LinearLayoutManager(getActivity().getApplicationContext()));
+        /**
+         * Download the data only if saved instance state equals null
+         * otherwise use the list already downloaded
+         */
+        if(savedInstanceState == null){
+            DataLoader.loadData(this);
+        } else {
+            setVenueList(savedInstanceState.<Venue>getParcelableArrayList(ARG_VENUES));
+        }
     }
 
-    private void testConnection(){
-        if(haveNetworkConnection()){
-            if(retriveList() == null){
-                downloadData();
-            } else {
-                setVenueList(retriveList());
-            }
-        } else {
-            mProgressBar.setVisibility(View.GONE);
-            mBackground.bringToFront();
-            mBackground.setBackgroundDrawable(getResources().getDrawable(R.drawable.antena));
+    /**
+     *
+     * @param response callback returning response object
+     */
+    @Override
+    public void onDownloadComplete(Object response) {
+        setVenueList((List<Venue>) response);
+    }
+
+    @Override
+    public void onDownloadFailed(RetrofitError error) {
+        if(error.isNetworkError()){
+            loadingBar.setVisibility(View.GONE);
+            listBackground.bringToFront();
+            listBackground.setBackgroundDrawable(getResources().getDrawable(R.drawable.antena));
         }
     }
 
@@ -84,67 +102,45 @@ public class FragmentVenueList extends Fragment {
         super.onAttach(activity);
 
         try {
-            mClickListener = (OnItemClickListener) activity;
+            sClickListener = (OnItemClickListener) activity;
         } catch (ClassCastException e) {
             throw new ClassCastException(activity.toString()
                     + " must implement OnDetailClicked");
         }
     }
 
-    private void downloadData(){
-        ProjectApplication.getInstance().getEndPoints().getVenues(new Callback<List<Venue>>() {
-            @Override
-            public void success(List<Venue> venues, Response response) {
-                setSaveList(venues);
-                setVenueList(venues);
-            }
-
-            @Override
-            public void failure(RetrofitError error) {
-                Log.d("retrofit error", error.getMessage());
-            }
-        });
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putParcelableArrayList(ARG_VENUES, (ArrayList<? extends android.os.Parcelable>) mRecyclerAdapter.getDataSet());
     }
 
+    /**
+     *
+     * @return New instance of this fragment
+     */
+    public static FragmentVenueList getInstance(){
+        return new FragmentVenueList();
+    }
+    /**
+     *
+     * @param venues set current venues to the recycler view
+     */
     private void setVenueList(final List<Venue> venues){
-        recyclerVenueAdapter mAdapter = new recyclerVenueAdapter(mContext, venues, new recyclerVenueAdapter.onItemClickListener() {
-            @Override
-            public void onItemClick(int position) {
-                mClickListener.onItemClick(venues.get(position));
-            }
-        });
-
-        mVenuesList.setAdapter(mAdapter);
-        mProgressBar.setVisibility(View.GONE);
-    }
-
-    private void setSaveList(List<Venue> list){
-        this.mPersistentList = list;
-    }
-
-    private List<Venue> retriveList(){
-        return mPersistentList;
-    }
-
-    private boolean haveNetworkConnection() {
-        boolean haveConnectedWifi = false;
-        boolean haveConnectedMobile = false;
-
-        ConnectivityManager cm = (ConnectivityManager) mContext.getSystemService(Context.CONNECTIVITY_SERVICE);
-        NetworkInfo[] netInfo = cm.getAllNetworkInfo();
-        for (NetworkInfo ni : netInfo) {
-            if (ni.getTypeName().equalsIgnoreCase("WIFI"))
-                if (ni.isConnected())
-                    haveConnectedWifi = true;
-            if (ni.getTypeName().equalsIgnoreCase("MOBILE"))
-                if (ni.isConnected())
-                    haveConnectedMobile = true;
+        if(mRecyclerAdapter == null){
+            mRecyclerAdapter= new RecyclerVenueAdapter(getActivity().getApplicationContext(), venues, new RecyclerVenueAdapter.onItemClickListener() {
+                @Override
+                public void onItemClick(int position) {
+                    sClickListener.onItemClick(venues.get(position));
+                }
+            });
+            venuesRecyclerView.setAdapter(mRecyclerAdapter);
+        } else {
+            mRecyclerAdapter.updateData(venues);
+            venuesRecyclerView.setAdapter(mRecyclerAdapter);
         }
-        return haveConnectedWifi || haveConnectedMobile;
-    }
 
-    private <T> T injectView(int viewId) {
-        return (T) getView().findViewById(viewId);
+        loadingBar.setVisibility(View.GONE);
     }
 
 }

@@ -9,7 +9,7 @@
     <LinearLayout
         android:orientation="vertical"
         android:layout_width="fill_parent"
-        android:layout_height="fill_parent">
+        android:layout_height="wrap_content">
 
         <ImageView
             android:scaleType="fitXY"
@@ -38,9 +38,10 @@
             android:layout_marginLeft="16dp"
             android:layout_marginTop="16dp"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textAppearance="?android:attr/textAppearanceMedium"
-            android:id="@+id/txt_detail_shedules" />
+            android:divider="@null"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:id="@+id/txt_detail_schedules" />
 
         <Button
             android:paddingRight="5dp"
